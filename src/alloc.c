@@ -374,7 +374,15 @@ void* _mi_theap_realloc_zero(mi_theap_t* theap, void* p, size_t newsize, bool ze
     size = _mi_usable_size(p,page);
     if (usable_pre!=NULL) { *usable_pre = mi_page_usable_block_size(page); }
   }
+  // a thread whose first heap call this is has no theap yet (`MI_THEAP_INITASNULL`): its block is
+  // never the same heap's, and the allocation below initializes the thread and its theap.
+  #if MI_THEAP_INITASNULL
+  const bool theap_is_set = (theap!=NULL);
+  #else
+  const bool theap_is_set = true;
+  #endif
   if mi_unlikely(newsize<=size && newsize>=(size/2) && newsize>0  // note: newsize must be > 0 or otherwise we return NULL for realloc(NULL,0)
+                  && theap_is_set
                   && mi_page_heap(page)==_mi_theap_heap(theap))             // and within the same heap
   {
     mi_assert_internal(p!=NULL);
